@@ -1,0 +1,279 @@
+---
+title: "Google Data Analytics Capstone"
+author: "Sandra"
+date: "2022-09-27"
+output: 
+  html_document:
+  toc: TRUE
+---
+
+# Bellabeat Case Study - Google Data Analytics Capstone
+
+## About the Company
+
+Bellabeat, a high-tech company that manufactures health-focused smart products. By collecting data on activity, sleep, stress, and reproductive health, Bellabeat seeks to empower women with knowledge about their own health and habits. Using this consumer data to reveal more opportunities for growth and high-level recommendations for how these trends can inform Bellabeat marketing strategy.
+
+### **PHASE ONE: ASK**
+
+**Questions for the analysis**
+
+-   What are some trends in smart device usage?
+-   How could these trends apply to Bellabeat customers?
+
+**Business task**
+
+Identify trends in how customers are using the smart devices to determine potential opportunities for growth and recommendations for the Bellabeat marketing strategy.
+
+### **PHASE TWO: PREPARE**
+
+**About the data**
+
+Data was downloaded to personal computer and saved in a dedicated folder for this project. The data set used is public domain and has been uploaded to [Kaggle](https://www.kaggle.com/datasets/arashnic/fitbit)by user Mobius. This data set consists of 30 eligible Fitbit users who consented to the submission of their personal device data, including minute-level output for physical activity, heart rate, and sleep monitoring. Some files included a smaller subset(weight) that was included as it speaks to the trends in device usage. Limitations include: small sample size, inconsistent recording of activities, a lack of demographic information and inconsistency between data frames.
+
+#### Install Packages
+
+```{#r, install packages}
+
+install.packages("tidyverse")
+install.packages("janitor")
+install.packages("tidyr")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("readr")
+install.packages("lubridate")
+install.packages("convertr")
+```
+
+#### Load Libraries
+
+```{r load libraries}
+library(tidyverse)
+library(janitor)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(skimr)
+library(lubridate)
+library(convertr)
+```
+
+#### Import data sets
+
+```{r}
+daily_activity <- read.csv("~/1_Portfolio_CaseStudy/Fitbit_dataset/dailyActivity_merged.csv")
+daily_sleep <- read.csv("~/1_Portfolio_CaseStudy/Fitbit_dataset/sleepDay_merged.csv")
+weight_log <- read.csv("~/1_Portfolio_CaseStudy/Fitbit_dataset/weightLogInfo_merged.csv")
+```
+
+**Preview data frames**
+
+```{r View data frames}
+head(daily_activity)
+head(daily_sleep)
+head(weight_log)
+
+colnames(daily_activity)
+colnames(daily_sleep)
+colnames(weight_log)
+```
+
+**Checking for errors and anomalies**
+
+```{r check for errors or anomalies}
+summary(daily_activity)
+summary(daily_sleep)
+summary(weight_log)
+```
+
+### **PHASE THREE: PROCESS**
+
+We will focus on daily records for activity, sleep and weight tracking information to inform the stakeholders of the trends their users are exhibiting. Unnecessary columns from the sleep and weight data sets have been omitted as they do not add to the analysis and were able to be condensed into a smaller data set that included user id, date and one variable to allow for tallying of records.
+
+We chose to complete this analysis using RStudio primarily, we utilized Googlesheets and BiqQuery to verify some of our functions throughout but ultimately RStudio accomplished everything we set out to do.
+
+**Identifying Outliers and Errors**
+
+```{r identifying outliers and errors}
+daily_sleep %>% 
+  group_by(TotalMinutesAsleep >480) %>% 
+  tally()
+
+daily_activity %>% 
+  group_by(SedentaryMinutes > 960, TotalSteps <100) %>% 
+  tally()
+```
+
+Of note: There were several entries with sleep well above 480 minutes which would be 8 hours per day, while this does seem unusual the entries were not contained to a single user. There were also many entries with 16 hours or more of sedentary minutes, 82 of these also had fewer than 100 steps per day. There is not an adequate metric for disqualifying, nullifying these entries did not seem appropriate.
+
+#### Clean up the data
+
+```{r clean column names}
+daily_activities <- clean_names(daily_activity)
+daily_sleep_log <- clean_names(daily_sleep)
+weights_log <- clean_names(weight_log)
+```
+
+**Preview the data**
+
+```{r view cleaned column names}
+colnames(daily_activities)
+colnames(daily_sleep_log)
+colnames(weights_log)
+
+head(daily_activities)
+head(daily_sleep_log)
+head(weights_log)
+
+glimpse(daily_activities)
+glimpse(daily_sleep_log)
+glimpse(weights_log)
+```
+
+##### Clean up dates and data types, create new data frames
+
+Cleaning up the data types and dates for simpler merging and easier reading. We changed ids to characters so they weren't being converted to exponents during analysis, we standardized the date formats and we selected the relevant columns to keep in the new data frame.
+
+Most of the weight log columns were removed as they didn't provide meaningful context as weight fluctuations are normal from day to day and any meaningful trends would require a longer survey of data, since most users did not track weight and were sporadic, we kept one column to support a comparison for how the devices were used.
+
+```{r clean up dates and data types, create updated data files}
+sleep_new <- daily_sleep_log %>% 
+  mutate(new_id = as.character(id)) %>% 
+  mutate(date = as.Date(sleep_day, "%m/%d/%Y %H:%M:%S")) %>% 
+  select(new_id, date, total_sleep_records)
+  
+weight_new <- weights_log %>% 
+  mutate(new_id = as.character(id)) %>% 
+  mutate(new_date = as.Date(date, "%m/%d/%Y %H:%M:%S")) %>% 
+  select(new_id, new_date, weight_kg) %>% 
+  rename(date = new_date) %>% 
+  rename(wt_entry = weight_kg)
+
+daily_new <- daily_activities %>% 
+  mutate(new_id = as.character(id)) %>% 
+  mutate(date = as.Date(activity_date, "%m/%d/%Y")) %>% 
+  select(-id, -activity_date)
+```
+
+#### Merge the data frames
+
+We used a left join so that all of the data merged together, so that we could accurately analyze participation in tracking various activities.
+
+**Merging**
+
+```{r merge daily activity and sleep and join with weight}
+act_sleep_merge <- left_join(daily_new, sleep_new)
+
+z_total_merge <- left_join(act_sleep_merge, weight_new)
+```
+
+**Preview the new data frame**
+
+```{r preview the new data frame}
+head(z_total_merge)
+colnames(z_total_merge)
+```
+
+### **PHASE FOUR: ANALYZE**
+
+**Clean up merged data frame**
+
+**Rearrange data frame**
+
+The original merged file was difficult to read with the dates and ids in the middle of the columns.
+
+```{r Rearrange columns simpler viewing}
+z_total_merge_2 <-  z_total_merge %>% 
+  select(date, new_id, total_steps, total_distance, tracker_distance, logged_activities_distance, very_active_distance, moderately_active_distance, light_active_distance, sedentary_active_distance, very_active_minutes, fairly_active_minutes, lightly_active_minutes, sedentary_minutes, calories, total_sleep_records, wt_entry)
+```
+
+**Preview cleaned up merged file**
+
+```{r skim}
+skim_without_charts(z_total_merge_2)
+```
+
+#### Pivot longer for visualization
+
+**Pivot the merged file for visualization**
+
+Pivoting the data frame for visualization, we dropped the NA values so that they did not skew actively recorded entry tallies.
+
+```{r pivot longer}
+merge_2_long <- z_total_merge_2 %>% 
+  pivot_longer(cols = total_steps:wt_entry, names_to = "Type", values_to = "Count", values_drop_na = TRUE)
+```
+
+**Tally for number of entries per day, per type**
+
+```{r tally how many entries per day, per type}
+Num_record_sorted <- merge_2_long %>% 
+  group_by(date, Type) %>% 
+  tally() %>% 
+  rename(Date = date) %>% 
+  rename(Counts = n)
+```
+
+```{r preview of tally}
+head(Num_record_sorted)
+summary(Num_record_sorted)
+```
+
+**Summary:** Our analysis indicates, that of the 30 users in the data set group, the majority were using their device to track physical activity. Many also tracked sleep but did not provide daily sleep data over the 30 day period. A small sample of the group tracked their weight and not daily.
+
+### PHASE FIVE: SHARE
+
+### **Trends**
+
+#### Participation
+
+```{r Participation, echo=FALSE}
+participation <- tibble(weight = n_distinct(weight_new$new_id), activity = n_distinct(daily_new$new_id), sleep = n_distinct(sleep_new$new_id))
+
+long <- participation %>% 
+  pivot_longer(weight:sleep, names_to = "type", values_to = "count")
+
+ggplot(long, aes(x= type, y = count, size = 4)) +
+  geom_point() + 
+  labs(title = "Entries by type", subtitle = "Number of entries for 30 day period by activity type, per user")
+```
+
+These plots show that users appear to primarily use their devices to track activity. Similar to the participation plot above this shows that the fewest number of entries were for weights, followed by sleep.
+
+```{r participation, fig.width=15,fig.height=7, echo=FALSE}
+ggplot(Num_record_sorted) + geom_jitter(aes(Counts, y= Type, color = Type)) + 
+  labs(title = "Number of Entries per day, by Type", subtitle = "Over 30 days", 
+       caption = "Data from FitBit Fitness Tracker Data (CC0: Public Domain, dataset made available through Mobius)") +
+  scale_y_discrete(position = "right") + theme(legend.position = "none")
+```
+
+Another potential trend worth noting is the decrease in entries overall towards the end of the data collection period, as seen below. This could indicate that while users were willing to give access to their data to the provider, for analysis, that they may have started the period off more engaged while losing some interest in tracking data towards the end of the 30 day period. This could indicate an external motivation for activity by many users, capabilities for competing with friends and strangers on challenges may motive users to engage and track more.
+
+#### Diligence in tracking
+
+```{r Entries per day, fig.height=8, fig.width=14, echo=FALSE}
+
+ggplot(Num_record_sorted, mapping = aes(x= Date, y= Counts)) + geom_col() +
+  labs(title = "Number of Entries per day", subtitle = "Over 30 days", 
+       caption = "Data from FitBit Fitness Tracker Data (CC0: Public Domain, dataset made available through Mobius)")
+
+```
+
+#### Sleep tracking
+
+One more trend noticed... sleep tracking appeared to fluctuate the most in cycles of approximately 3 days, one hypothesis is that users need to charge their devices and may be doing that while they are sleep so as to not lose out on tracking the information they are most interested in tracking. This hypothesis would need further exploration before any recommendations could be made specifically, however, a quick charge ability may help if this is in fact the case.
+
+```{r sleep tracking trend, echo=FALSE}
+ggplot(sleep_new, aes(x=date, y=total_sleep_records)) + geom_col() +
+  labs(x= "Date", y= "Sleep Records", title = "Sleep Entries per Day", subtitle = "Over 30 days", caption = "Data from FitBit Fitness Tracker Data (CC0: Public Domain, dataset made available through Mobius)")
+```
+
+The questions we started with:
+
+**-   What are some trends in smart device usage?**
+
+  - Trends have been identified above in the "Trends" section.
+  
+**-   How could these trends apply to Bellabeat customers?**
+
+  - These trends provide an opportunity for Bellabeat to create an interactive environment for their users where they are encouraged to move more and rest well without an emphasis on weight loss or gain.
