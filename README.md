@@ -170,9 +170,6 @@ daily_new <- daily_activities %>%
   mutate(date = as.Date(activity_date, "%m/%d/%Y")) %>% 
   select(-id, -activity_date)
 ```
-![image](https://user-images.githubusercontent.com/113202250/196533311-35963e4b-d42a-4894-b31a-53fbcddedf68.png)
-
-
 #### Merge the data frames
 
 We used a left join so that all of the data merged together, so that we could accurately analyze participation in tracking various activities.
