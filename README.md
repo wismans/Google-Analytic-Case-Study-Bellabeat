@@ -1,9 +1,23 @@
 # Bellabeat Case Study - Google Data Analytics Capstone
 
+1. [Phase 1: ASK](#1)
+2. [Phase 2: Prepare](#2)
+3. [Phase 3: Process](#3)<br>
+    3.1 [Clean](#3.1)<br>
+    3.2 [Merge](#3.2)
+4. [Phase 4: Analyze](#4)<br>
+    4.1 [Summary](#4.1)
+5. [Phase 5: Share](#5)<br>
+    5.1 [Trends](#5.1)<br>
+      5.1.1 [Participation](#5.1.1)<br>
+      5.1.2 [Tracking](#5.1.2)<br>
+      5.1.3 [Sleep](#5.1.3)
+    
 ## About the Company
 
 Bellabeat, a high-tech company that manufactures health-focused smart products. By collecting data on activity, sleep, stress, and reproductive health, Bellabeat seeks to empower women with knowledge about their own health and habits. Using this consumer data to reveal more opportunities for growth and high-level recommendations for how these trends can inform Bellabeat marketing strategy.
 
+<a id="1"></a> <br>
 ### **PHASE ONE: ASK**
 
 **Questions for the analysis**
@@ -15,6 +29,7 @@ Bellabeat, a high-tech company that manufactures health-focused smart products. 
 
 Identify trends in how customers are using the smart devices to determine potential opportunities for growth and recommendations for the Bellabeat marketing strategy.
 
+<a id="2"></a> <br>
 ### **PHASE TWO: PREPARE**
 
 **About the data**
@@ -91,6 +106,7 @@ summary(weight_log)
 ![image](https://user-images.githubusercontent.com/113202250/196532767-4bc3028a-7cce-4266-9bbc-31e515970acc.png)
 ![image](https://user-images.githubusercontent.com/113202250/196532828-cb0beabf-8079-45f7-b1f0-d35c44cb4e42.png)
 
+<a id="3"></a> <br>
 ### **PHASE THREE: PROCESS**
 
 We will focus on daily records for activity, sleep and weight tracking information to inform the stakeholders of the trends their users are exhibiting. Unnecessary columns from the sleep and weight data sets have been omitted as they do not add to the analysis and were able to be condensed into a smaller data set that included user id, date and one variable to allow for tallying of records.
@@ -145,7 +161,7 @@ glimpse(weights_log)
 ```
 ![image](https://user-images.githubusercontent.com/113202250/196533232-7e074b17-8f62-4757-b00b-c4079fcd3f62.png)
 
-
+<a id="3.1"></a> <br>
 ##### Clean up dates and data types, create new data frames
 
 Cleaning up the data types and dates for simpler merging and easier reading. We changed ids to characters so they weren't being converted to exponents during analysis, we standardized the date formats and we selected the relevant columns to keep in the new data frame.
@@ -170,6 +186,8 @@ daily_new <- daily_activities %>%
   mutate(date = as.Date(activity_date, "%m/%d/%Y")) %>% 
   select(-id, -activity_date)
 ```
+
+<a id="3.2"></a> <br>
 #### Merge the data frames
 
 We used a left join so that all of the data merged together, so that we could accurately analyze participation in tracking various activities.
@@ -193,7 +211,7 @@ colnames(z_total_merge)
 ```
 ![image](https://user-images.githubusercontent.com/113202250/196533439-a87cc55c-7b63-4ceb-b122-6701f1ff133c.png)
 
-
+<a id="4"></a> <br>
 ### **PHASE FOUR: ANALYZE**
 
 **Clean up merged data frame**
@@ -262,13 +280,14 @@ summary(tally_user)
 ```
 ![image](https://user-images.githubusercontent.com/113202250/196533982-438d8d88-5301-4ef3-9b65-b4cde807516e.png)
 
-
+<a id="4.1"></a> <br>
 **Summary:** Our analysis indicates, that of the 30 users in the data set group, the majority were using their device to track physical activity. Many also tracked sleep but did not provide daily sleep data over the 30 day period. A small sample of the group tracked their weight and not daily.
 
+<a id="5"></a> <br>
 ### PHASE FIVE: SHARE
-
+<a id="5.1"></a> <br>
 ### **Trends**
-
+<a id="5.1.1"></a> <br>
 #### Participation
 
 ```{r Participation, echo=FALSE}
@@ -329,7 +348,7 @@ user_4057192912 <- merge_2_long %>%
 summary(user_4057192912)
 ```
 ![image](https://user-images.githubusercontent.com/113202250/196534311-4a837c5f-8261-4e93-9ac0-5c181057d47e.png)
-
+<a id="5.1.2"></a> <br>
 #### Diligence in tracking
 Another potential trend worth noting is the decrease in entries overall towards the end of the data collection period, as seen below. This could indicate that while users were willing to give access to their data to the provider, for analysis, that they may have started the period off more engaged while losing some interest in tracking data towards the end of the 30 day period. This could indicate an external motivation for activity by many users, capabilities for competing with friends and strangers on challenges may motive users to engage and track more.
 
@@ -340,7 +359,7 @@ ggplot(tally_date, mapping = aes(x= Date, y= Counts)) + geom_col() +
        caption = "Data from FitBit Fitness Tracker Data (CC0: Public Domain, dataset made available through Mobius)")
 ```
 ![image](https://user-images.githubusercontent.com/113202250/196534365-bcc18a1a-af5a-4b39-8b32-8d1e8ea6d6b7.png)
-
+<a id="5.1.3"></a> <br>
 #### Sleep tracking
 
 One more trend noticed... sleep tracking appeared to fluctuate the most in cycles of approximately 3 days, one hypothesis is that users need to charge their devices and may be doing that while they are sleep so as to not lose out on tracking the information they are most interested in tracking. This hypothesis would need further exploration before any recommendations could be made specifically, however, a quick charge ability may help if this is in fact the case.
